@@ -1,4 +1,5 @@
 import utils
+import h5py
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -28,7 +29,7 @@ def build_model(vocab_size, embedding_matrix):
     model.add(Embedding(vocab_size, 100, weights=[embedding_matrix], input_length=100, trainable=False))
     model.add(Bidirectional(LSTM(64)))
     model.add(Dropout(0.5))
-    model.add(Dense(1, activation='sigmoid'))
+    model.add(Dense(6, activation='sigmoid'))
     model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['acc'])
     return model
 
@@ -54,5 +55,14 @@ if __name__ == '__main__':
                                                        shuffle=True)
     comments = get_encoded_comments(X_train, vocab)
     embedding_matrix = get_embedding_matrix(vocab_size)
-    model = build_model()
+    model = build_model(vocab_size, embedding_matrix)
+
+    model.fit(comments, y_train , epochs=10, verbose=0)
+
+    model.save("models/models.h5")
+
+    # evaluate the model
+    comments = get_encoded_comments(X_test, vocab)
+    loss, accuracy = model.evaluate(comments, y_test.tolist(), verbose=0)
+    print('Accuracy: %f' % (accuracy * 100))
 
