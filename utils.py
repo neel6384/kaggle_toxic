@@ -40,15 +40,15 @@ def comments_to_token(data):
 
 def generate_word2vec(tokenized_sentences):
     model = Word2Vec(tokenized_sentences)
-    model.save('word2Vec_model')
+    model.save('models/word2Vec_model')
 
 
 def get_word2vec(tokenized_sentences):
-    if os.path.exists('word2Vec_model'):
-        return Word2Vec.load('word2Vec_model')
+    if os.path.exists('models/word2Vec_model'):
+        return Word2Vec.load('models/word2Vec_model')
     else:
         generate_word2vec(tokenized_sentences)
-        return Word2Vec.load('word2Vec_model')
+        return Word2Vec.load('models/word2Vec_model')
 
 
 def get_encoded_comments(tokenized_comments, vocab):

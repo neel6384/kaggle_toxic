@@ -1,18 +1,13 @@
 
 import utils
 import numpy as np
-import os.path
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from gensim.models import Word2Vec
 from keras.models import Sequential
-from keras.layers import Dense
-from keras.layers import Flatten
-from keras.layers import Embedding
-from keras.preprocessing.text import Tokenizer
+from keras.layers import Dense, Embedding, LSTM, Bidirectional,Dropout
 from keras.preprocessing.sequence import pad_sequences
 
-train_raw = pd.read_csv('train.csv')
+train_raw = pd.read_csv('data/train.csv')
 
 data = train_raw['comment_text'].tolist()
 
@@ -51,9 +46,9 @@ encoded_comments = utils.get_encoded_comments(utils.comments_to_token(X_train.to
 padded_comments = pad_sequences(encoded_comments, maxlen=100, padding='post')
 
 model = Sequential()
-e = Embedding(vocab_size, 100, weights=[embedding_matrix], input_length=100, trainable=False)
-model.add(e)
-model.add(Flatten())
+model.add(Embedding(vocab_size, 100, weights=[embedding_matrix], input_length=100, trainable=False))
+model.add(Bidirectional(LSTM(64)))
+model.add(Dropout(0.5))
 model.add(Dense(1, activation='sigmoid'))
 # compile the model
 model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['acc'])
@@ -62,6 +57,7 @@ print(model.summary())
 # fit the model
 model.fit(padded_comments,  y_train.tolist(), epochs=10, verbose=0)
 
+model.save("models/models.h5")
 
 # evaluate the model
 encoded_comments = utils.get_encoded_comments(utils.comments_to_token(X_test.tolist()), vocab)
