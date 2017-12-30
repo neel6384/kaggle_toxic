@@ -90,6 +90,26 @@ def get_embedding_matrix(vocab_size, word_vec_len):
     return embedding_matrix
 
 
+def build_binary_lstm_model(vocab_size, embedding_matrix, word_vector_lenth, avg_sentence_len):
+    model = Sequential()
+    model.add(Embedding(vocab_size, word_vector_lenth, weights=[embedding_matrix],
+                        input_length=avg_sentence_len, trainable=False))
+    model.add(Bidirectional(LSTM(128)))
+    model.add(Dropout(0.25))
+    model.add(Dense(1, activation='sigmoid'))
+    #sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
+    model.compile(optimizer='rmsprop', loss='binary_crossentropy', metrics=['accuracy'])
+    return model
+
+
+def is_foul(train_raw):
+    if train_raw['toxic'] == 1 or train_raw['severe_toxic'] == 1 or train_raw['obscene'] == 1 or\
+                    train_raw['threat'] == 1 or train_raw['insult'] == 1 or train_raw['identity_hate']:
+        return 1
+    else:
+        return 0
+
+
 if __name__ == '__main__':
 
     word_vector_len = 256
@@ -125,6 +145,20 @@ if __name__ == '__main__':
     loss, accuracy = model.evaluate(comments, y_test, verbose=0)
     print('Accuracy: %f' % (accuracy * 100))
 
-    classes = model.predict(X_test)
-    print (classes)
+    # X_test.tolist()[:20]
+    # y_test[:20]
+    # model.predict(np.array(comments[:20]))
 
+    data['foul'] = data.apply(is_foul, axis=1)
+    train_not_foul = data[['comment_text', 'foul']][data['foul'] == 0]
+    train_foul = data[['comment_text', 'foul']][data['foul'] == 1]
+
+    # Down sample not foul to 35000
+    train_not_foul = train_not_foul.sample(35000)
+
+    train = pd.concat([train_foul, train_not_foul])
+
+    X_train, X_test, y_train, y_test = train_test_split(train['comment_text'], train['foul'], test_size=0.2,
+                                                        shuffle=True)
+
+    X_test['is_foul'] = pd.Series(model.predict(np.array(comments)), index=X_test.index)
